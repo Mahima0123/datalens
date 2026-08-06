@@ -1,0 +1,16 @@
+Django==5.2.5
+djangorestframework==3.16.1
+
+psycopg[binary]==3.2.9
+
+python-dotenv==1.1.1
+
+pandas==2.3.1
+openpyxl==3.1.5
+pyarrow==21.0.0
+
+pyspark==4.0.0
+
+apache-airflow==3.0.6
+
+gunicorn==23.0.0
