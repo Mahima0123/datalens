@@ -1,6 +1,5 @@
-version: "3.9"
-
 services:
+
   db:
     image: postgres:16
     container_name: datalens-db
@@ -17,6 +16,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 
   backend:
     build:
@@ -39,6 +39,113 @@ services:
 
     depends_on:
       - db
+
+
+  airflow-init:
+    image: apache/airflow:3.0.6
+    container_name: datalens-airflow-init
+
+    command:
+      - bash
+      - -c
+      - |
+        airflow db migrate
+
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow_user:airflow_password@db:5432/airflow_db
+
+    env_file:
+      - airflow/.env
+
+    depends_on:
+      - db
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/home:/opt/airflow/home
+      - media_data:/app/media
+
+
+  airflow-apiserver:
+    image: apache/airflow:3.0.6
+    container_name: datalens-airflow-apiserver
+
+    command: api-server
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow_user:airflow_password@db:5432/airflow_db
+
+    env_file:
+      - airflow/.env
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/home:/opt/airflow/home
+      - media_data:/app/media
+
+    depends_on:
+      - db
+      - airflow-init
+
+
+  airflow-scheduler:
+    image: apache/airflow:3.0.6
+    container_name: datalens-airflow-scheduler
+
+    command: scheduler
+
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow_user:airflow_password@db:5432/airflow_db
+
+    env_file:
+      - airflow/.env
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/home:/opt/airflow/home
+      - media_data:/app/media
+
+    depends_on:
+      - db
+      - airflow-init
+
+
+  airflow-dag-processor:
+    image: apache/airflow:3.0.6
+    container_name: datalens-airflow-dag-processor
+
+    command: dag-processor
+
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow_user:airflow_password@db:5432/airflow_db
+
+    env_file:
+      - airflow/.env
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/home:/opt/airflow/home
+      - media_data:/app/media
+
+    depends_on:
+      - db
+      - airflow-init
+
 
 volumes:
   postgres_data:
